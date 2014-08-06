@@ -256,8 +256,13 @@ def create_report_data(results_dir):
 def do_compile(opts, sketch, board):
     sketch_result_dir = opts.results_dir / opts.buildset / sketch.parent / board
     build_dir = sketch_result_dir / 'build'
+    json_file = sketch_result_dir / 'build.json'
     if sketch_result_dir.exists():
-        if opts.force:
+        if not json_file.exists():
+            if opts.main.verbose >= 1:
+                sys.stdout.write("{} looks interrupted, removing\n".format(str(sketch.parent / board)))
+            shutil.rmtree(str(sketch_result_dir))
+        elif opts.force:
             if opts.main.verbose >= 1:
                 sys.stdout.write("{} already exists, removing\n".format(str(sketch.parent / board)))
             shutil.rmtree(str(sketch_result_dir))
@@ -283,7 +288,7 @@ def do_compile(opts, sketch, board):
         'board'         : board,
         'buildset'      : opts.buildset,
     }
-    with (sketch_result_dir / 'build.json').open('w') as f:
+    with json_file.open('w') as f:
         json.dump(data, f)
 
 if __name__ == '__main__':
