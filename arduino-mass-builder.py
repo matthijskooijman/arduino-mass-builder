@@ -109,7 +109,7 @@ def main(**kwargs):
 @click.pass_context
 @click.option('--results-dir', '-r', default='result', type=Path(), help='Directory to store results in')
 @click.option('--boards', '-b', default='arduino:avr:uno', help='Boards to build for (can contain whitespace or comma-separated values)')
-@click.option('--buildset', '-s', default='default', help='Arbitrary name to identify these builds')
+@click.option('--buildset', '-s', default='base', help='Arbitrary name to identify these builds')
 @click.option('--force/--no-force', '-f', default=False, help='Overwrite existing builds')
 @click.argument('sketches', nargs=-1, type=Path(exists=True, dir_okay=False, readable=True))
 def build(ctx, opts, sketches, boards, **kwargs):
