@@ -111,6 +111,7 @@ def main(**kwargs):
 @click.option('--boards', '-b', default='arduino:avr:uno', help='Boards to build for (can contain whitespace or comma-separated values)')
 @click.option('--buildset', '-s', default='base', help='Arbitrary name to identify these builds')
 @click.option('--force/--no-force', '-f', default=False, help='Overwrite existing builds')
+@click.option('--keep-build-dir/--no-keep-build-dir', default=False, help='Do not delete the build results after building')
 @click.argument('sketches', nargs=-1, type=Path(exists=True, dir_okay=False, readable=True))
 def build(ctx, opts, sketches, boards, **kwargs):
     for sketch in sketches:
@@ -287,6 +288,9 @@ def do_compile(opts, sketch, board):
 
     with json_file.open('w') as f:
         json.dump(build, f)
+
+    if not opts.keep_build_dir:
+        shutil.rmtree(str(build_dir))
 
 if __name__ == '__main__':
     sys.exit(main())
