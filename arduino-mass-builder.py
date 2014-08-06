@@ -39,7 +39,7 @@ import csv
 arduino_cmd = 'arduino-git'
 size_command = 'avr-size'
 report_attrs = ['buildset', 'sketch_dir', 'board', 'status', 'program_size', 'data_size']
-delta_attrs = ['delta_status', 'delta_program_size', 'delta_data_size', 'delta_content', 'is_base']
+delta_attrs = ['delta_status', 'delta_program_size', 'delta_data_size', 'is_base']
 report_headers = {
     'buildset': 'Buildset',
     'sketch_dir': 'Sketch',
@@ -50,7 +50,6 @@ report_headers = {
     'delta_status': 'Δ status',
     'delta_program_size': 'Δ program size',
     'delta_data_size': 'Δ data size',
-    'delta_content': 'Δ content',
     'is_base': 'In base buildset',
 }
 
@@ -180,7 +179,7 @@ def add_delta_info(data, base):
 
 
         if build['buildset'] == base:
-            build['delta_status'] = 'Unchanged'
+            build['delta_status'] = 'Is base'
             if build['status'] == 'OK':
                 build['delta_program_size'] = 0
                 build['delta_data_size'] = 0
@@ -189,26 +188,26 @@ def add_delta_info(data, base):
                 base_build = data[(base, build['sketch_dir'], build['board'])]
             except KeyError:
                 sys.stderr.write("{} / {} / {}: No corresponding build in base buildset found, cannot compare\n".format(build['buildset'], build['sketch_dir'], build['board']))
+                build['delta_status'] = 'No base'
                 continue
 
-            if build['status'] == base_build['status']:
-                build['delta_status'] = 'Unchanged'
+            if build['status'] == 'OK' and base_build['status'] == 'OK':
+                if build['hash'] == base_build['hash']:
+                    build['delta_status'] = 'Identical'
+                else:
+                    build['delta_status'] = 'Modified'
             else:
                 if build['status'] == 'OK':
                     build['delta_status'] = 'Fixed'
                 elif base_build['status'] == 'OK':
                     build['delta_status'] = 'Broken'
                 else:
-                    build['delta_status'] = 'Changed'
+                    build['delta_status'] = 'Still broken'
 
             if build['status'] == 'OK' and base_build['status'] == 'OK':
                 build['delta_program_size'] = build['program_size'] - base_build['program_size']
                 build['delta_data_size'] = build['data_size'] - base_build['data_size']
 
-                if build['hash'] == base_build['hash']:
-                    build['delta_content'] = 'Identical'
-                else:
-                    build['delta_content'] = 'Different'
 
 
 def run_command(opts, cmd, output_file):
