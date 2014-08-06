@@ -132,7 +132,10 @@ def report(ctx, opts, sketches, **kwargs):
     report_dir = opts.results_dir / 'report'
     if not report_dir.exists():
         report_dir.mkdir(parents=True)
-    data = create_report_data(opts.results_dir)
+    (data, buildsets) = create_report_data(opts.results_dir)
+    if len(buildsets) > 1 and not opts.base_set and 'base' in buildsets:
+        opts.base_set = 'base'
+
     if opts.base_set:
         add_delta_info(data, opts.base_set)
 
@@ -232,6 +235,7 @@ def find_builds(result_dir):
 def create_report_data(results_dir):
     result_dir = results_dir
     data = {}
+    buildsets = set()
     for (path, build) in find_builds(result_dir):
         if build['exit_code'] != 0:
             build['status'] = 'Failed to compile'
@@ -246,7 +250,8 @@ def create_report_data(results_dir):
             build['status'] = 'OK'
 
         data[(build['buildset'], build['sketch_dir'], build['board'])] = build
-    return data
+        buildsets.add(build['buildset'])
+    return (data, buildsets)
 
 def do_compile(opts, sketch, board):
     sketch_result_dir = opts.results_dir / opts.buildset / sketch.parent / board
