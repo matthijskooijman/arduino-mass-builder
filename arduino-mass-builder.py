@@ -153,13 +153,13 @@ def build_report_row(build, delta):
         row += [build.get(attr, '') for attr in delta_attrs]
     return row
 
-def add_extra_info(path, build):
+def add_extra_info(build_dir, build):
     """
     Add extra info (sizes, build result checksum) to the given record.
     This looks at the actual compiled file to find out the info.
     """
-    elffile = path / 'build' / (build['sketch_name'] + '.cpp.elf')
-    hexfile = path / 'build' / (build['sketch_name'] + '.cpp.hex')
+    elffile = build_dir / (build['sketch_name'] + '.cpp.elf')
+    hexfile = build_dir / (build['sketch_name'] + '.cpp.hex')
     for line in subprocess.check_output([size_command, '-C', str(elffile)]).splitlines():
         match = re.match(b'^Program: *([0-9]*) bytes$', line)
         if match:
@@ -241,12 +241,6 @@ def create_report_data(results_dir):
             build['status'] = 'Failed to compile'
 
         if not 'status' in build:
-            try:
-                add_extra_info(path, build)
-            except subprocess.CalledProcessError:
-                build['status'] = 'Failed to get size'
-
-        if not 'status' in build:
             build['status'] = 'OK'
 
         data[(build['buildset'], build['sketch_dir'], build['board'])] = build
@@ -288,6 +282,9 @@ def do_compile(opts, sketch, board):
         'board'         : board,
         'buildset'      : opts.buildset,
     }
+    if res == 0:
+        add_extra_info(build_dir, build)
+
     with json_file.open('w') as f:
         json.dump(build, f)
 
