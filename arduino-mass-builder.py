@@ -154,22 +154,31 @@ def build_report_row(build, delta):
         row += [build.get(attr, '') for attr in delta_attrs]
     return row
 
-def add_extra_info(build_dir, build):
+def add_extra_info(build_dir, log_file, build):
     """
     Add extra info (sizes, build result checksum) to the given record.
     This looks at the actual compiled file to find out the info.
     """
-    elffile = build_dir / (build['sketch_name'] + '.cpp.elf')
-    hexfile = build_dir / (build['sketch_name'] + '.cpp.hex')
-    for line in subprocess.check_output([size_command, '-C', str(elffile)]).splitlines():
-        match = re.match(b'^Program: *([0-9]*) bytes$', line)
-        if match:
-            build['program_size'] = int(match.group(1))
-        match = re.match(b'^Data: *([0-9]*) bytes$', line)
-        if match:
-            build['data_size'] = int(match.group(1))
+    program = None
+    data = None
+    with open(str(log_file), 'r') as f:
+        for line in f.readlines():
+                match = re.match('^Sketch uses ([0-9,]+) bytes.* of program storage space', line)
+                if match:
+                    build['program_size'] = int(match.group(1).replace(',', ''))
+                match = re.match('^Global variables use ([0-9,]+) bytes.* of dynamic memory', line)
+                if match:
+                    build['data_size'] = int(match.group(1).replace(',', ''))
 
-    with open(str(hexfile), 'rb') as f:
+    # Compare the .hex file generated. We cannot compare the .elf, since
+    # that contains full source file paths and possibly other variable
+    # things we do not want to include
+    output = build_dir / (build['sketch_name'] + '.cpp.hex')
+    if not output.exists():
+        # SAM core uses .bin instead of .hex
+        output = build_dir / (build['sketch_name'] + '.cpp.bin')
+
+    with open(str(output), 'rb') as f:
         h = hashlib.sha1()
         h.update(f.read())
         build['hash'] = h.hexdigest()
@@ -252,6 +261,8 @@ def do_compile(opts, sketch, board):
     sketch_result_dir = opts.results_dir / opts.buildset / sketch.parent / board
     build_dir = sketch_result_dir / 'build'
     json_file = sketch_result_dir / 'build.json'
+    log_file = sketch_result_dir / 'build.log'
+
     if sketch_result_dir.exists():
         if not json_file.exists():
             if opts.main.verbose >= 1:
@@ -274,7 +285,7 @@ def do_compile(opts, sketch, board):
     cmd += ['--verify', str(sketch.resolve())]
     cmd += ['--verbose']
 
-    res = run_command(opts, cmd, sketch_result_dir / 'build.log')
+    res = run_command(opts, cmd, log_file)
 
     build = {
         'exit_code'     : res,
@@ -284,7 +295,7 @@ def do_compile(opts, sketch, board):
         'buildset'      : opts.buildset,
     }
     if res == 0:
-        add_extra_info(build_dir, build)
+        add_extra_info(build_dir, log_file, build)
 
     with json_file.open('w') as f:
         json.dump(build, f)
