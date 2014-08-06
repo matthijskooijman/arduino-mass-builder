@@ -281,7 +281,7 @@ def do_compile(opts, sketch, board):
 
     res = run_command(opts, cmd, sketch_result_dir / 'build.log')
 
-    data = {
+    build = {
         'exit_code'     : res,
         'sketch_dir'    : str(sketch.parent),
         'sketch_name'   : sketch.stem,
@@ -289,7 +289,7 @@ def do_compile(opts, sketch, board):
         'buildset'      : opts.buildset,
     }
     with json_file.open('w') as f:
-        json.dump(data, f)
+        json.dump(build, f)
 
 if __name__ == '__main__':
     sys.exit(main())
