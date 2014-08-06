@@ -109,7 +109,7 @@ def main(**kwargs):
 @pass_opts
 @click.pass_context
 @click.option('--results-dir', '-r', default='result', type=Path(), help='Directory to store results in')
-@click.option('boards', '--board', '-b', default='arduino:avr:uno', multiple=True, help='Boards to build for (can be specified multiple times)')
+@click.option('--boards', '-b', default='arduino:avr:uno', help='Boards to build for (can contain whitespace or comma-separated values)')
 @click.option('--buildset', '-s', default='default', help='Arbitrary name to identify these builds')
 @click.option('--force/--no-force', '-f', default=False, help='Overwrite existing builds')
 @click.argument('sketches', nargs=-1, type=Path(exists=True, dir_okay=False, readable=True))
@@ -118,8 +118,9 @@ def build(ctx, opts, sketches, boards, **kwargs):
         if sketch.is_absolute() or sketch.parts[0] == '..':
             ctx.fail("Sketch filenames must be relative paths, inside the current directory")
 
+    boardlist = re.split('[\s,]+', boards)
     for sketch in sketches:
-        for board in boards:
+        for board in boardlist:
             do_compile(opts, sketch, board)
 
 @main.command()
