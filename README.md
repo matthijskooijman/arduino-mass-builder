@@ -28,6 +28,9 @@ Build results are placed in the `result` directory by default, pass
 You can run this command mutiple times with different sketches or boards
 and the results will just be merged together.
 
+Add `-v` or `--verbose` _before_ the `build` command to enable verbose
+mode.
+
 See `arduino-mass-builder.py --help` and `arduino-mass-builder.py build
 --help` for more options.
 
