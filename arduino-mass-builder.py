@@ -112,6 +112,7 @@ def main(**kwargs):
 @click.option('--buildset', '-s', default='base', help='Arbitrary name to identify these builds')
 @click.option('--force/--no-force', '-f', default=False, help='Overwrite existing builds')
 @click.option('--keep-build-dir/--no-keep-build-dir', default=False, help='Do not delete the build results after building')
+@click.option('--keep-build-results/--no-keep-build-results', default=True, help='Keep the build results (.elf / .hex / .bin file)')
 @click.argument('sketches', nargs=-1, type=Path(exists=True, dir_okay=False, readable=True))
 def build(ctx, opts, sketches, boards, **kwargs):
     for sketch in sketches:
@@ -299,6 +300,12 @@ def do_compile(opts, sketch, board):
 
     with json_file.open('w') as f:
         json.dump(build, f)
+
+    if opts.keep_build_results:
+        for ext in ['.cpp.hex', '.cpp.bin', '.cpp.elf']:
+            filename = build_dir / (build['sketch_name'] + ext)
+            if filename.exists():
+                shutil.copy(str(filename), str(sketch_result_dir))
 
     if not opts.keep_build_dir:
         shutil.rmtree(str(build_dir))
